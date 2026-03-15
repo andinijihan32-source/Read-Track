@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Read Track</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FFFBF5;--bg2:#FFF7EC;--card:#fff;
+  --ink:#1C1208;--ink2:#4A3728;--muted:#9C7E6A;
+  --amber:#F5A623;--amber-l:#FEF0D0;
+  --rust:#D95F2B;--rust-l:#FCE8DC;
+  --forest:#2A6041;--forest-l:#D6EDE0;
+  --sky:#3A7BD5;--sky-l:#D8E8FC;
+  --rose:#C0445E;--rose-l:#FAD9E0;
+  --purple:#7B5EA7;--purple-l:#EDE8F5;
+  --border:#E8DDD0;--radius:16px;
+  --shadow:0 2px 16px rgba(28,18,8,.08);
+  /* level colors */
+  --lv1:#78909C;--lv2:#66BB6A;--lv3:#42A5F5;--lv4:#AB47BC;--lv5:#FF7043;
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden}
+
+/* SCREENS */
+.screen{display:none;min-height:100vh;flex-direction:column;animation:fadeUp .3s ease}
+.screen.active{display:flex}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--card);border-bottom:1.5px solid var(--border);position:sticky;top:0;z-index:100;flex-shrink:0;gap:10px}
+.logo{font-family:'Lora',serif;font-size:20px;font-weight:700;color:var(--ink);white-space:nowrap}
+.logo span{color:var(--rust)}
+.back-btn{background:none;border:none;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.back-btn:hover{color:var(--ink)}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1.5px solid var(--border);display:flex;z-index:100;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;cursor:pointer;border:none;background:none;font-family:'Nunito',sans-serif;color:var(--muted);font-size:9px;font-weight:800;transition:color .2s}
+.bnav-item .bni{font-size:19px;transition:transform .2s}
+.bnav-item.active{color:var(--rust)}
+.bnav-item.active .bni{transform:scale(1.2)}
+.main-content{flex:1;overflow-y:auto;padding-bottom:80px}
+
+/* BUTTONS */
+.btn{border:none;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.btn-primary{background:var(--rust);color:#fff;padding:13px 26px;font-size:15px}
+.btn-primary:hover{background:#C04B1F;transform:translateY(-1px);box-shadow:0 4px 14px rgba(217,95,43,.3)}
+.btn-ghost{background:transparent;color:var(--ink);padding:12px 22px;font-size:14px;border:2px solid var(--border)}
+.btn-ghost:hover{border-color:var(--ink)}
+.btn-sm{padding:8px 16px;font-size:13px}
+.btn-forest{background:var(--forest);color:#fff}
+.btn-forest:hover{background:#1E4D31}
+.btn-amber{background:var(--amber);color:var(--ink)}
+.btn-full{width:100%}
+
+/* CARDS & INPUTS */
+.card{background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);box-shadow:var(--shadow)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:50px;font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.badge-amber{background:var(--amber-l);color:#8B6000}
+.badge-forest{background:var(--forest-l);color:var(--forest)}
+.badge-rust{background:var(--rust-l);color:var(--rust)}
+.badge-sky{background:var(--sky-l);color:var(--sky)}
+.badge-purple{background:var(--purple-l);color:var(--purple)}
+.input-field{width:100%;padding:12px 15px;border:2px solid var(--border);border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:600;background:var(--card);color:var(--ink);outline:none;transition:border-color .2s}
+.input-field:focus{border-color:var(--rust)}
+.input-label{font-size:12px;font-weight:800;color:var(--ink2);margin-bottom:5px;display:block;letter-spacing:.3px;text-transform:uppercase}
+.input-group{margin-bottom:16px}
+.divider{height:1px;background:var(--border);margin:0 20px}
+.toast{position:fixed;top:76px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 18px;border-radius:50px;font-size:13px;font-weight:700;z-index:9999;opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1}
+
+/* ── LEVEL SYSTEM ── */
+.level-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:50px;font-size:12px;font-weight:800;color:#fff}
+.lv-bar-wrap{background:rgba(255,255,255,.2);border-radius:50px;height:6px;overflow:hidden;flex:1}
+.lv-bar-fill{height:100%;border-radius:50px;background:#fff;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.xp-pill{background:rgba(255,255,255,.15);border-radius:50px;padding:4px 10px;font-size:11px;font-weight:800;color:#fff}
+
+/* Level up modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex;animation:fadeUp .3s ease}
+.modal-box{background:var(--card);border-radius:24px;padding:32px 24px;text-align:center;max-width:340px;width:100%;border:2px solid var(--border)}
+.modal-box .m-emoji{font-size:64px;margin-bottom:12px;animation:bounce .8s ease infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.modal-box h2{font-family:'Lora',serif;font-size:26px;font-weight:700;margin-bottom:6px}
+.modal-box p{font-size:14px;color:var(--muted);font-weight:600;line-height:1.6;margin-bottom:20px}
+.level-perks{background:var(--bg2);border-radius:14px;padding:14px;text-align:left;margin-bottom:20px}
+.level-perks .perk{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;margin-bottom:6px}
+.level-perks .perk:last-child{margin-bottom:0}
+
+/* ══════════════════════════════════════════ */
+/* SCREEN: LOGIN */
+/* ══════════════════════════════════════════ */
+#s-login{align-items:center;justify-content:center;background:linear-gradient(145deg,#FFF7EC,#FCE8DC)}
+.login-box{width:100%;max-width:400px;padding:24px}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .big-logo{font-family:'Lora',serif;font-size:40px;font-weight:700}
+.login-logo .big-logo span{color:var(--rust)}
+.login-logo p{font-size:14px;color:var(--muted);margin-top:6px;font-weight:600}
+.login-card{background:var(--card);border-radius:24px;padding:28px;border:1.5px solid var(--border);box-shadow:0 8px 40px rgba(28,18,8,.1)}
+.login-card h2{font-family:'Lora',serif;font-size:22px;font-weight:700;margin-bottom:4px}
+.login-card .sub{font-size:13px;color:var(--muted);margin-bottom:22px;font-weight:600}
+.avatar-selector{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.av-opt{aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;transition:all .2s}
+.av-opt:hover,.av-opt.selected{border-color:var(--rust);background:var(--rust-l);transform:scale(1.05)}
+.login-full-btn{width:100%;padding:14px;border-radius:14px;background:var(--rust);color:#fff;border:none;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:6px;transition:all .2s}
+.login-full-btn:hover{background:#C04B1F}
+
+/* ══════════════════════════════════════════ */
+/* SCREEN: HOME */
+/* ══════════════════════════════════════════ */
+.home-hero{padding:22px 20px 18px;background:linear-gradient(160deg,var(--forest) 0%,#1E4D31 100%);color:#fff;position:relative;overflow:hidden}
+.home-hero::after{content:'📚';position:absolute;right:-10px;bottom:-20px;font-size:110px;opacity:.1;pointer-events:none}
+.hero-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.hero-avatar{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid rgba(255,255,255,.3);cursor:pointer}
+.hero-greeting{font-size:13px;font-weight:700;opacity:.7}
+.hero-name{font-family:'Lora',serif;font-size:24px;font-weight:700;margin-bottom:14px}
+.hero-name span{color:var(--amber)}
+/* Level progress in hero */
+.hero-level{background:rgba(255,255,255,.1);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.hero-level-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.hero-level-name{font-size:13px;font-weight:800}
+.hero-level-xp{font-size:11px;opacity:.7;font-weight:700}
+.hero-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.h-stat{background:rgba(255,255,255,.1);border-radius:12px;padding:12px 10px;text-align:center}
+.h-stat .sv{font-family:'Lora',serif;font-size:22px;font-weight:700}
+.h-stat .sl{font-size:10px;font-weight:700;opacity:.65;margin-top:2px}
+.home-section{padding:18px 20px}
+.home-section h2{font-family:'Lora',serif;font-size:18px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.continue-card{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:var(--radius);padding:14px;border:1.5px solid var(--border);cursor:pointer;transition:box-shadow .2s;margin-bottom:10px}
+.continue-card:hover{box-shadow:0 4px 20px rgba(28,18,8,.1)}
+.cc-cover{width:52px;height:68px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.cc-info{flex:1;min-width:0}
+.cc-info h3{font-size:14px;font-weight:800;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-info p{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:7px}
+.cc-prog{height:5px;background:var(--bg2);border-radius:50px;overflow:hidden}
+.cc-prog-fill{height:100%;background:var(--rust);border-radius:50px}
+.new-story-btn{width:100%;padding:14px;border-radius:var(--radius);background:var(--amber-l);border:2px dashed var(--amber);font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.new-story-btn:hover{background:var(--amber)}
+
+/* ══════════════════════════════════════════ */
+/* SCREEN: CHARACTER MAKER */
+/* ══════════════════════════════════════════ */
+.char-steps{display:flex;gap:6px;padding:16px 20px 0}
+.cs{flex:1;height:4px;border-radius:50px;background:var(--border);transition:background .3s}
+.cs.done{background:var(--rust)}
+.cs.active{background:var(--amber)}
+.step-label-txt{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;padding:6px 20px 0}
+.char-section{padding:14px 20px 16px}
+.char-section h2{font-family:'Lora',serif;font-size:20px;font-weight:700;margin-bottom:4px}
+.char-section .hint{font-size:12px;color:var(--muted);margin-bottom:16px;font-weight:600}
+.appearance-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px}
+.ap-opt{aspect-ratio:1;border-radius:12px;border:2px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;transition:all .2s;padding:6px}
+.ap-opt:hover,.ap-opt.selected{border-color:var(--rust);background:var(--rust-l)}
+.ap-opt .ap-icon{font-size:24px}
+.ap-opt .ap-label{font-size:9px;font-weight:800;color:var(--ink2);text-align:center;line-height:1.2}
+.trait-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
+.trait-opt{padding:12px 14px;border-radius:12px;border:2px solid var(--border);background:var(--card);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
+.trait-opt:hover,.trait-opt.selected{border-color:var(--rust);background:var(--rust-l)}
+.trait-opt .to-icon{font-size:20px}
+.trait-opt .to-info strong{display:block;font-size:13px;font-weight:800}
+.trait-opt .to-info span{font-size:10px;color:var(--muted);font-weight:600}
+.char-preview-float{background:var(--card);border-radius:18px;padding:14px 18px;margin-bottom:16px;border:1.5px solid var(--border);display:flex;align-items:center;gap:12px}
+.char-big-av{width:56px;height:56px;border-radius:14px;background:var(--amber-l);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;border:2px solid var(--amber)}
+.char-info-preview h3{font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:3px}
+.char-info-preview p{font-size:11px;color:var(--muted);font-weight:600}
+
+/* ══════════════════════════════════════════ */
+/* SCREEN: STORY SETUP */
+/* ══════════════════════════════════════════ */
+.story-option-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.story-opt{border-radius:14px;border:2px solid var(--border);background:var(--card);cursor:pointer;transition:all .2s;padding:14px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.story-opt:hover,.story-opt.selected{border-color:var(--rust);background:var(--rust-l)}
+.story-opt .so-icon{font-size:24px}
+.story-opt .so-name{font-size:13px;font-weight:800;color:var(--ink)}
+.story-opt .so-desc{font-size:10px;color:var(--muted);font-weight:600}
+.story-opt.locked{opacity:.4;pointer-events:none;position:relative}
+.story-opt.locked::after{content:'🔒';position:absolute;top:8px;right:8px;font-size:14px}
+.summary-card{background:var(--forest-l);border-radius:14px;padding:16px;border:1.5px solid #A8D5B5;margin-bottom:16px}
+.summary-card h3{font-size:13px;font-weight:800;color:var(--forest);margin-bottom:10px}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(42,96,65,.1);font-size:12px}
+.summary-row:last-child{border-bottom:none}
+.summary-row .sk{color:var(--muted);font-weight:600}
+.summary-row .sv{font-weight:800;color:var(--ink)}
+/* level info box */
+.level-info-box{background:var(--amber-l);border-radius:12px;padding:12px 14px;border:1.5px solid var(--amber);margin-bottom:16px;display:flex;gap:10px;align-items:flex-start}
+.lib-icon{font-size:24px}
+.lib-text{font-size:12px;font-weight:700;color:var(--ink2);line-height:1.5}
+.lib-text strong{color:var(--ink);font-size:13px}
+
+/* ══════════════════════════════════════════ */
+/* SCREEN: GENERATING */
+/* ══════════════════════════════════════════ */
+#s-generating{align-items:center;justify-content:center;background:linear-gradient(145deg,#FFF7EC,#FCE8DC)}
+.gen-box{text-align:center;padding:40px 28px;max-width:360px}
+.gen-anim{font-size:56px;animation:bounce2 1s ease infinite}
+@keyframes bounce2{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.gen-box h2{font-family:'Lora',serif;font-size:24px;font-weight:700;margin:18px 0 8px}
+.gen-box p{font-size:13px;color:var(--muted);font-weight:600;line-height:1.7}
+.gen-dots{display:flex;justify-content:center;gap:7px;margin-top:20px}
+.gen-dot{width:9px;height:9px;border-radius:50%;background:var(--rust);animation:pulse 1.4s ease infinite}
+.gen-dot:nth-child(2){animation-delay:.2s}
+.gen-dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.4}50%{transform:scale(1.3);opacity:1}}
+.gen-log{margin-top:16px;font-size:12px;color:var(--muted);font-weight:600;min-height:18px}
+
+/* ══════════════════════════════════════════ */
+/* SCREEN: READING */
+/* ══════════════════════════════════════════ */
+.reading-topbar{display:flex;align-items:center;gap:10px;padding:10px 18px;background:var(--card);border-bottom:1.5px solid var(--border);position:sticky;top:0;z-index:50}
+.prog-wrap{flex:1}
+.prog-track{height:5px;background:var(--bg2);border-radius:50px;overflow:hidden}
+.prog-fill{height:100%;background:var(--rust);border-radius:50px;transition:width .5s}
+.prog-txt{font-size:10px;font-weight:700;color:var(--muted);margin-top:3px;text-align:center}
+.timer-pill{background:var(--forest-l);color:var(--forest);padding:5px 11px;border-radius:50px;font-size:12px;font-weight:800;white-space:nowrap}
+.xp-gain-pill{background:var(--amber-l);color:#8B6000;padding:5px 11px;border-radius:50px;font-size:12px;font-weight:800;white-space:nowrap}
+.story-body{max-width:640px;margin:0 auto;padding:28px 20px 20px}
+.story-genre-badge{margin-bottom:16px}
+.story-h1{font-family:'Lora',serif;font-size:26px;font-weight:700;line-height:1.2;margin-bottom:7px}
+.story-byline{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:22px;padding-bottom:20px;border-bottom:2px solid var(--border)}
+.story-byline span{color:var(--rust)}
+.story-text{font-family:'Lora',serif;font-size:17px;line-height:1.85;color:#2A1F0E}
+.story-text p{margin-bottom:20px}
+.story-text p:first-child::first-letter{font-size:3.6em;font-weight:700;color:var(--rust);float:left;line-height:.78;margin:6px 9px 0 0}
+.story-loading{text-align:center;padding:40px 20px}
+.story-loading p{font-size:14px;color:var(--muted);font-weight:600;margin-top:10px}
+.story-actions{display:flex;gap:10px;padding:16px 20px;max-width:640px;margin:0 auto}
+.story-actions button{flex:1}
+
+/* ══════════════════════════════════════════ */
+/* SCREEN: QUEST */
+/* ══════════════════════════════════════════ */
+.quest-header{padding:20px;background:linear-gradient(135deg,var(--amber) 0%,#F07B2D 100%);color:var(--ink)}
+.quest-header h2{font-family:'Lora',serif;font-size:22px;font-weight:700;margin-bottom:3px}
+.quest-header p{font-size:12px;font-weight:600;opacity:.7;margin-bottom:10px}
+.quest-score-bar{display:flex;align-items:center;justify-content:space-between}
+.quest-score{font-family:'Lora',serif;font-size:26px;font-weight:700}
+.quest-stars{font-size:20px;letter-spacing:2px}
+.quest-body{padding:16px 20px}
+.q-card{background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.q-type-tag{font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.q-text{font-family:'Lora',serif;font-size:16px;font-weight:600;line-height:1.4;margin-bottom:14px}
+.q-opts{display:flex;flex-direction:column;gap:7px}
+.q-opt{padding:11px 14px;border-radius:11px;border:2px solid var(--border);background:var(--card);cursor:pointer;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;text-align:left;transition:all .2s;display:flex;align-items:center;gap:9px}
+.q-opt:hover:not(.answered){border-color:var(--sky);background:var(--sky-l)}
+.q-opt.correct{border-color:var(--forest);background:var(--forest-l);color:var(--forest);pointer-events:none}
+.q-opt.wrong{border-color:var(--rust);background:var(--rust-l);color:var(--rust);pointer-events:none}
+.q-opt.disabled{pointer-events:none;opacity:.55}
+.q-opt .ol{width:24px;height:24px;border-radius:50%;border:2px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-weight:800}
+.quest-result{background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);padding:24px;text-align:center;margin:0 0 20px}
+.result-emoji{font-size:52px;margin-bottom:10px}
+.result-score{font-family:'Lora',serif;font-size:38px;font-weight:700;color:var(--rust)}
+.result-msg{font-size:14px;color:var(--muted);font-weight:600;margin:6px 0 8px}
+.result-xp{font-size:16px;font-weight:800;color:var(--amber);margin-bottom:16px}
+.result-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+
+/* ══════════════════════════════════════════ */
+/* SCREEN: TRACKER */
+/* ══════════════════════════════════════════ */
+.tracker-hero{padding:20px;color:#fff;border-radius:0 0 20px 20px;margin-bottom:16px}
+.tracker-hero h2{font-family:'Lora',serif;font-size:22px;font-weight:700;margin-bottom:14px}
+.tracker-hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.th-stat{background:rgba(255,255,255,.15);border-radius:12px;padding:12px}
+.th-stat .tsv{font-family:'Lora',serif;font-size:26px;font-weight:700}
+.th-stat .tsl{font-size:10px;font-weight:700;opacity:.75;margin-top:2px}
+.th-stat .tsc{font-size:11px;color:rgba(255,255,255,.6);margin-top:3px}
+.chart-section{padding:0 20px 16px}
+.chart-section h3{font-family:'Lora',serif;font-size:17px;font-weight:700;margin-bottom:14px}
+.bar-chart{display:flex;align-items:flex-end;gap:5px;height:110px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bar-val{font-size:10px;font-weight:800;color:var(--ink2)}
+.bar-rect{width:100%;border-radius:6px 6px 0 0;min-height:4px;transition:height .6s}
+.bar-day{font-size:9px;font-weight:700;color:var(--muted)}
+.story-log{padding:0 20px 16px}
+.story-log h3{font-family:'Lora',serif;font-size:17px;font-weight:700;margin-bottom:12px}
+.log-item{display:flex;align-items:center;gap:10px;padding:12px;background:var(--card);border-radius:12px;border:1.5px solid var(--border);margin-bottom:8px}
+.log-cover{width:40px;height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.log-info{flex:1;min-width:0}
+.log-info strong{display:block;font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log-info span{font-size:11px;color:var(--muted);font-weight:600}
+.log-right{text-align:right}
+.log-stars{color:var(--amber);font-size:13px}
+.log-xp{font-size:11px;font-weight:800;color:var(--amber)}
+.badge-section{padding:0 20px 20px}
+.badge-section h3{font-family:'Lora',serif;font-size:17px;font-weight:700;margin-bottom:12px}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bdg{background:var(--card);border-radius:12px;border:1.5px solid var(--border);padding:14px 10px;text-align:center}
+.bdg .bi{font-size:26px;margin-bottom:4px}
+.bdg .bn{font-size:11px;font-weight:800;color:var(--ink2)}
+.bdg .bs{font-size:10px;color:var(--muted);font-weight:600}
+.bdg.locked{opacity:.35}
+
+/* ══════════════════════════════════════════ */
+/* SCREEN: LEVEL INFO */
+/* ══════════════════════════════════════════ */
+.level-map{padding:16px 20px}
+.level-card{border-radius:16px;padding:16px;margin-bottom:10px;border:2px solid transparent;position:relative;overflow:hidden}
+.level-card.current{border-width:2px}
+.level-card .lc-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.level-card .lc-icon{font-size:28px}
+.level-card .lc-name{font-family:'Lora',serif;font-size:17px;font-weight:700}
+.level-card .lc-sub{font-size:11px;font-weight:700;opacity:.7}
+.level-card .lc-perks{display:flex;flex-direction:column;gap:4px}
+.level-card .lc-perk{font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px}
+.level-card.locked-lv{opacity:.45}
+.current-tag{background:rgba(255,255,255,.25);padding:3px 10px;border-radius:50px;font-size:10px;font-weight:800;color:#fff;position:absolute;top:12px;right:12px}
+
+/* ══════════════════════════════════════════ */
+/* SCREEN: LEADERBOARD */
+/* ══════════════════════════════════════════ */
+.lb-header{padding:20px;background:linear-gradient(135deg,var(--purple) 0%,#5C3D8A 100%);color:#fff}
+.lb-header h2{font-family:'Lora',serif;font-size:22px;font-weight:700;margin-bottom:4px}
+.lb-header p{font-size:12px;opacity:.7;font-weight:600}
+.lb-tabs{display:flex;gap:0;margin:0 20px 16px;background:var(--bg2);border-radius:50px;padding:3px;border:1.5px solid var(--border)}
+.lb-tab{flex:1;padding:8px;border-radius:50px;border:none;background:transparent;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:var(--muted);cursor:pointer;transition:all .2s}
+.lb-tab.active{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.lb-list{padding:0 20px 20px}
+.lb-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border-radius:14px;border:1.5px solid var(--border);margin-bottom:8px;transition:box-shadow .2s}
+.lb-item.me{border-color:var(--amber);background:var(--amber-l)}
+.lb-item.top1{border-color:#FFD700;background:linear-gradient(135deg,#FFFDE7,#FFF9C4)}
+.lb-item.top2{border-color:#C0C0C0;background:linear-gradient(135deg,#F5F5F5,#EEEEEE)}
+.lb-item.top3{border-color:#CD7F32;background:linear-gradient(135deg,#FFF3E0,#FFE0B2)}
+.lb-rank{font-family:'Lora',serif;font-size:18px;font-weight:700;width:28px;text-align:center;flex-shrink:0}
+.lb-rank.gold{color:#B8860B}
+.lb-rank.silver{color:#808080}
+.lb-rank.bronze{color:#8B4513}
+.lb-av{width:38px;height:38px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:2px solid var(--border)}
+.lb-info{flex:1;min-width:0}
+.lb-info strong{display:block;font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-info span{font-size:11px;color:var(--muted);font-weight:600}
+.lb-score{text-align:right;flex-shrink:0}
+.lb-score .ls-val{font-family:'Lora',serif;font-size:18px;font-weight:700;color:var(--rust);display:block}
+.lb-score .ls-lbl{font-size:10px;color:var(--muted);font-weight:700}
+.me-tag{font-size:10px;font-weight:800;color:var(--amber);background:rgba(245,166,35,.2);padding:2px 8px;border-radius:50px}
+.empty-state{text-align:center;padding:40px 20px}
+.empty-state .es-icon{font-size:48px;margin-bottom:10px}
+.empty-state h3{font-family:'Lora',serif;font-size:18px;font-weight:700;margin-bottom:6px}
+.empty-state p{font-size:13px;color:var(--muted);font-weight:600;line-height:1.6;margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<!-- LEVEL UP MODAL -->
+<div class="modal-overlay" id="levelup-modal">
+  <div class="modal-box">
+    <div class="m-emoji" id="lu-emoji">🎉</div>
+    <h2 id="lu-title">Level Naik!</h2>
+    <p id="lu-sub">Selamat! Kamu telah naik ke level berikutnya!</p>
+    <div class="level-perks" id="lu-perks"></div>
+    <button class="btn btn-primary btn-full" onclick="closeLevelUp()">Lanjutkan Petualangan! 🚀</button>
+  </div>
+</div>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="s-login" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="big-logo">Read<span>Track</span></div>
+      <p>Platform literasi personalmu ✨</p>
+    </div>
+    <div class="login-card">
+      <h2>Halo, siapa kamu?</h2>
+      <p class="sub">Masukkan namamu dan pilih avatar untuk mulai!</p>
+      <div class="input-group">
+        <label class="input-label">Nama Kamu</label>
+        <input id="login-name" class="input-field" placeholder="Contoh: Arsakha, Sari, Bima..." maxlength="20">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Pilih Avatar</label>
+        <div class="avatar-selector">
+          <div class="av-opt selected" data-av="🦁" onclick="selectAv(this)">🦁</div>
+          <div class="av-opt" data-av="🐯" onclick="selectAv(this)">🐯</div>
+          <div class="av-opt" data-av="🦊" onclick="selectAv(this)">🦊</div>
+          <div class="av-opt" data-av="🐺" onclick="selectAv(this)">🐺</div>
+          <div class="av-opt" data-av="🐼" onclick="selectAv(this)">🐼</div>
+          <div class="av-opt" data-av="🦋" onclick="selectAv(this)">🦋</div>
+          <div class="av-opt" data-av="🐸" onclick="selectAv(this)">🐸</div>
+          <div class="av-opt" data-av="🦅" onclick="selectAv(this)">🦅</div>
+        </div>
+      </div>
+      <button class="login-full-btn" onclick="doLogin()">Mulai Membaca! 🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ HOME ══════════ -->
+<div id="s-home" class="screen">
+  <div class="topbar">
+    <div class="logo">Read<span>Track</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-ghost btn-sm" onclick="goTo('s-levelmap')">⚡ Level</button>
+      <div style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="logout()">
+        <span id="home-av" style="font-size:22px">🦁</span>
+        <span id="home-name" style="font-size:13px;font-weight:800"></span>
+      </div>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="home-hero">
+      <div class="hero-top">
+        <div>
+          <div class="hero-greeting">Selamat datang! 👋</div>
+          <div class="hero-name">Halo, <span id="hero-name">—</span>!</div>
+        </div>
+        <div style="text-align:right">
+          <div class="level-badge" id="hero-lv-badge" style="background:var(--lv1)">⭐ Pemula</div>
+        </div>
+      </div>
+      <div class="hero-level">
+        <div class="hero-level-top">
+          <span class="hero-level-name" id="hero-lv-name">Level 1 — Pemula</span>
+          <span class="hero-level-xp" id="hero-lv-xp">0 / 100 XP</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="lv-bar-wrap"><div class="lv-bar-fill" id="hero-lv-bar" style="width:0%"></div></div>
+          <span class="xp-pill" id="hero-total-xp">0 XP</span>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="h-stat"><div class="sv" id="hs-dur">0</div><div class="sl">Menit Baca</div></div>
+        <div class="h-stat"><div class="sv" id="hs-stories">0</div><div class="sl">Cerita Selesai</div></div>
+        <div class="h-stat"><div class="sv" id="hs-score">—</div><div class="sl">Rata Skor</div></div>
+      </div>
+    </div>
+    <div class="home-section">
+      <h2>📖 Lanjutkan Membaca</h2>
+      <div id="continue-area"></div>
+      <button class="new-story-btn" onclick="goTo('s-charmaker');setNav('bn-story')">✨ Buat Cerita Baru</button>
+    </div>
+    <div class="divider"></div>
+    <div class="home-section" style="padding-bottom:8px">
+      <h2>🏅 Pencapaian Terbaru</h2>
+      <div class="badge-grid" id="home-badge-grid"></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="bnav-item active" id="bn-home" onclick="goTo('s-home');setNav('bn-home')"><span class="bni">🏠</span>Beranda</button>
+    <button class="bnav-item" id="bn-story" onclick="goTo('s-charmaker');setNav('bn-story')"><span class="bni">✨</span>Buat Cerita</button>
+    <button class="bnav-item" id="bn-lb" onclick="goTo('s-leaderboard');setNav('bn-lb')"><span class="bni">🏆</span>Ranking</button>
+    <button class="bnav-item" id="bn-tracker" onclick="goTo('s-tracker');setNav('bn-tracker')"><span class="bni">📊</span>Tracker</button>
+  </div>
+</div>
+
+<!-- ══════════ LEVEL MAP ══════════ -->
+<div id="s-levelmap" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goTo('s-home')">← Beranda</button>
+    <div class="logo">⚡ Level</div>
+    <div style="width:70px"></div>
+  </div>
+  <div class="main-content">
+    <div style="padding:16px 20px 4px">
+      <div style="background:var(--amber-l);border-radius:14px;padding:14px 16px;border:1.5px solid var(--amber);margin-bottom:4px">
+        <div style="font-size:12px;font-weight:800;color:#8B6000;margin-bottom:4px">XP KAMU SAAT INI</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-family:'Lora',serif;font-size:28px;font-weight:700" id="lm-total-xp">0 XP</div>
+          <div style="flex:1">
+            <div class="lv-bar-wrap" style="background:rgba(139,96,0,.15)"><div class="lv-bar-fill" id="lm-bar" style="width:0%;background:var(--amber)"></div></div>
+            <div style="font-size:11px;font-weight:700;color:#8B6000;margin-top:3px" id="lm-next">0/100 menuju level berikutnya</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="level-map" id="level-map-list"></div>
+  </div>
+</div>
+
+<!-- ══════════ CHARACTER MAKER ══════════ -->
+<div id="s-charmaker" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goTo('s-home');setNav('bn-home')">← Beranda</button>
+    <div class="logo">Buat Tokoh</div>
+    <div style="width:70px"></div>
+  </div>
+  <div class="main-content">
+    <div class="char-steps" id="char-steps-bar">
+      <div class="cs done" id="cstep1"></div>
+      <div class="cs" id="cstep2"></div>
+      <div class="cs" id="cstep3"></div>
+      <div class="cs" id="cstep4"></div>
+    </div>
+    <div class="step-label-txt" id="step-label">Langkah 1 dari 4</div>
+
+    <!-- Step 1 -->
+    <div id="char-step1" class="char-section">
+      <h2>Siapa tokohmu?</h2>
+      <p class="hint">Beri nama dan tentukan dasar tokohmu</p>
+      <div class="input-group">
+        <label class="input-label">Nama Tokoh</label>
+        <input id="char-name" class="input-field" placeholder="Masukkan nama tokohmu..." maxlength="20">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Jenis Kelamin</label>
+        <div class="trait-grid" style="grid-template-columns:1fr 1fr">
+          <div class="trait-opt selected" data-key="gender" data-val="Laki-laki" onclick="selectTrait(this,'gender')"><span class="to-icon">👦</span><div class="to-info"><strong>Laki-laki</strong></div></div>
+          <div class="trait-opt" data-key="gender" data-val="Perempuan" onclick="selectTrait(this,'gender')"><span class="to-icon">👧</span><div class="to-info"><strong>Perempuan</strong></div></div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Umur</label>
+        <div class="trait-grid">
+          <div class="trait-opt selected" data-key="age" data-val="9 tahun" onclick="selectTrait(this,'age')"><span class="to-icon">🔢</span><div class="to-info"><strong>9 tahun</strong></div></div>
+          <div class="trait-opt" data-key="age" data-val="10 tahun" onclick="selectTrait(this,'age')"><span class="to-icon">🔢</span><div class="to-info"><strong>10 tahun</strong></div></div>
+          <div class="trait-opt" data-key="age" data-val="11 tahun" onclick="selectTrait(this,'age')"><span class="to-icon">🔢</span><div class="to-info"><strong>11 tahun</strong></div></div>
+          <div class="trait-opt" data-key="age" data-val="12 tahun" onclick="selectTrait(this,'age')"><span class="to-icon">🔢</span><div class="to-info"><strong>12 tahun</strong></div></div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="nextCharStep(1)">Lanjut →</button>
+    </div>
+
+    <!-- Step 2 -->
+    <div id="char-step2" class="char-section" style="display:none">
+      <h2>Penampilan tokoh</h2>
+      <p class="hint">Pilih ciri khas yang membuat tokohmu unik!</p>
+      <div class="input-group">
+        <label class="input-label">Rambut</label>
+        <div class="appearance-grid">
+          <div class="ap-opt selected" data-key="hair" data-val="rambut pendek hitam" onclick="selectApp(this,'hair')"><span class="ap-icon">💇</span><span class="ap-label">Pendek Hitam</span></div>
+          <div class="ap-opt" data-key="hair" data-val="rambut panjang hitam" onclick="selectApp(this,'hair')"><span class="ap-icon">💆</span><span class="ap-label">Panjang Hitam</span></div>
+          <div class="ap-opt" data-key="hair" data-val="rambut keriting" onclick="selectApp(this,'hair')"><span class="ap-icon">🌀</span><span class="ap-label">Keriting</span></div>
+          <div class="ap-opt" data-key="hair" data-val="rambut dikuncir" onclick="selectApp(this,'hair')"><span class="ap-icon">🎀</span><span class="ap-label">Dikuncir</span></div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Pakaian Khas</label>
+        <div class="appearance-grid">
+          <div class="ap-opt selected" data-key="outfit" data-val="seragam sekolah" onclick="selectApp(this,'outfit')"><span class="ap-icon">👕</span><span class="ap-label">Seragam</span></div>
+          <div class="ap-opt" data-key="outfit" data-val="jaket petualang" onclick="selectApp(this,'outfit')"><span class="ap-icon">🧥</span><span class="ap-label">Jaket Petualang</span></div>
+          <div class="ap-opt" data-key="outfit" data-val="baju batik" onclick="selectApp(this,'outfit')"><span class="ap-icon">👔</span><span class="ap-label">Batik</span></div>
+          <div class="ap-opt" data-key="outfit" data-val="jubah ilmuwan" onclick="selectApp(this,'outfit')"><span class="ap-icon">🥼</span><span class="ap-label">Jubah Ilmuwan</span></div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Benda Andalan</label>
+        <div class="appearance-grid">
+          <div class="ap-opt selected" data-key="item" data-val="ransel kuning" onclick="selectApp(this,'item')"><span class="ap-icon">🎒</span><span class="ap-label">Ransel</span></div>
+          <div class="ap-opt" data-key="item" data-val="buku catatan ajaib" onclick="selectApp(this,'item')"><span class="ap-icon">📓</span><span class="ap-label">Buku Catatan</span></div>
+          <div class="ap-opt" data-key="item" data-val="teropong tua" onclick="selectApp(this,'item')"><span class="ap-icon">🔭</span><span class="ap-label">Teropong</span></div>
+          <div class="ap-opt" data-key="item" data-val="kompas warisan kakek" onclick="selectApp(this,'item')"><span class="ap-icon">🧭</span><span class="ap-label">Kompas</span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="flex:1" onclick="prevCharStep(2)">← Kembali</button>
+        <button class="btn btn-primary" style="flex:2" onclick="nextCharStep(2)">Lanjut →</button>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div id="char-step3" class="char-section" style="display:none">
+      <h2>Kepribadian tokoh</h2>
+      <p class="hint">Pilih sifat terkuat dalam diri tokohmu</p>
+      <div class="input-group">
+        <label class="input-label">Sifat Utama</label>
+        <div class="trait-grid">
+          <div class="trait-opt selected" data-key="trait" data-val="pemberani dan tidak kenal takut" onclick="selectTrait(this,'trait')"><span class="to-icon">🦁</span><div class="to-info"><strong>Pemberani</strong><span>Tidak kenal takut</span></div></div>
+          <div class="trait-opt" data-key="trait" data-val="sangat cerdas dan suka berpikir" onclick="selectTrait(this,'trait')"><span class="to-icon">🧠</span><div class="to-info"><strong>Cerdas</strong><span>Suka berpikir</span></div></div>
+          <div class="trait-opt" data-key="trait" data-val="baik hati dan selalu menolong" onclick="selectTrait(this,'trait')"><span class="to-icon">🤝</span><div class="to-info"><strong>Baik Hati</strong><span>Suka menolong</span></div></div>
+          <div class="trait-opt" data-key="trait" data-val="sangat penasaran dan suka bertanya" onclick="selectTrait(this,'trait')"><span class="to-icon">🔍</span><div class="to-info"><strong>Penasaran</strong><span>Suka bertanya</span></div></div>
+          <div class="trait-opt" data-key="trait" data-val="kreatif dan imajinatif" onclick="selectTrait(this,'trait')"><span class="to-icon">🎨</span><div class="to-info"><strong>Kreatif</strong><span>Imajinatif</span></div></div>
+          <div class="trait-opt" data-key="trait" data-val="tangguh dan pantang menyerah" onclick="selectTrait(this,'trait')"><span class="to-icon">💪</span><div class="to-info"><strong>Tangguh</strong><span>Pantang menyerah</span></div></div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Kemampuan Spesial (opsional)</label>
+        <input id="char-power" class="input-field" placeholder="Contoh: bisa berbicara dengan hewan..." maxlength="60">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" style="flex:1" onclick="prevCharStep(3)">← Kembali</button>
+        <button class="btn btn-primary" style="flex:2" onclick="nextCharStep(3)">Lanjut →</button>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div id="char-step4" class="char-section" style="display:none">
+      <h2>Tokohmu siap! 🎉</h2>
+      <p class="hint">Ini dia tokoh yang akan kamu bawa berpetualangan</p>
+      <div class="char-preview-float">
+        <div class="char-big-av" id="prev-char-av">🦁</div>
+        <div class="char-info-preview">
+          <h3 id="prev-char-name">—</h3>
+          <p id="prev-char-desc">—</p>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-bottom:10px" onclick="goTo('s-storysetup')">Pilih Cerita untuk Tokoh Ini →</button>
+      <button class="btn btn-ghost btn-full" onclick="prevCharStep(4)">← Edit Tokoh</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ STORY SETUP ══════════ -->
+<div id="s-storysetup" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goTo('s-charmaker')">← Tokoh</button>
+    <div class="logo">Pilih Cerita</div>
+    <div style="width:70px"></div>
+  </div>
+  <div class="main-content">
+    <div style="padding:14px 20px 0">
+      <div class="char-preview-float" style="background:var(--amber-l);border-color:var(--amber)">
+        <div class="char-big-av" id="story-prev-av">🦁</div>
+        <div class="char-info-preview">
+          <h3 id="story-prev-name">—</h3>
+          <p id="story-prev-trait">—</p>
+        </div>
+      </div>
+      <div class="level-info-box">
+        <div class="lib-icon">⚡</div>
+        <div class="lib-text" id="level-story-info">Level 1: cerita pendek (~300 kata), 4 pertanyaan quest</div>
+      </div>
+    </div>
+    <div style="padding:0 20px 16px">
+      <div class="input-group">
+        <label class="input-label">🗺️ Latar Tempat</label>
+        <div class="story-option-grid" id="setting-grid">
+          <div class="story-opt selected" data-key="setting" data-val="sebuah hutan ajaib yang penuh misteri" onclick="selectStory(this,'setting')"><span class="so-icon">🌲</span><span class="so-name">Hutan Ajaib</span><span class="so-desc">Penuh misteri</span></div>
+          <div class="story-opt" data-key="setting" data-val="kota modern yang sibuk" onclick="selectStory(this,'setting')"><span class="so-icon">🏙️</span><span class="so-name">Kota Modern</span><span class="so-desc">Ramai & teknologi</span></div>
+          <div class="story-opt" data-key="setting" data-val="desa terpencil di pegunungan" onclick="selectStory(this,'setting')"><span class="so-icon">⛰️</span><span class="so-name">Desa Pegunungan</span><span class="so-desc">Tenang & tradisi</span></div>
+          <div class="story-opt" data-key="setting" data-val="dunia bawah laut yang bercahaya" onclick="selectStory(this,'setting')"><span class="so-icon">🌊</span><span class="so-name">Bawah Laut</span><span class="so-desc">Magis & misterius</span></div>
+          <div class="story-opt" data-key="setting" data-val="istana di atas awan" onclick="selectStory(this,'setting')" id="set-awan"><span class="so-icon">☁️</span><span class="so-name">Istana Awan</span><span class="so-desc">🔒 Unlock Lv 2</span></div>
+          <div class="story-opt" data-key="setting" data-val="sekolah sihir yang tersembunyi" onclick="selectStory(this,'setting')" id="set-sihir"><span class="so-icon">🏫</span><span class="so-name">Sekolah Sihir</span><span class="so-desc">🔒 Unlock Lv 3</span></div>
+          <div class="story-opt" data-key="setting" data-val="planet antarbintang yang asing" onclick="selectStory(this,'setting')" id="set-planet"><span class="so-icon">🪐</span><span class="so-name">Planet Antarbintang</span><span class="so-desc">🔒 Unlock Lv 4</span></div>
+          <div class="story-opt" data-key="setting" data-val="kerajaan tersembunyi di dalam gunung berapi" onclick="selectStory(this,'setting')" id="set-gunung"><span class="so-icon">🌋</span><span class="so-name">Kerajaan Gunung Api</span><span class="so-desc">🔒 Unlock Lv 5</span></div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">📚 Genre Cerita</label>
+        <div class="story-option-grid">
+          <div class="story-opt selected" data-key="genre" data-val="petualangan seru" onclick="selectStory(this,'genre')"><span class="so-icon">⚔️</span><span class="so-name">Petualangan</span><span class="so-desc">Aksi & eksplorasi</span></div>
+          <div class="story-opt" data-key="genre" data-val="misteri yang harus dipecahkan" onclick="selectStory(this,'genre')"><span class="so-icon">🔍</span><span class="so-name">Misteri</span><span class="so-desc">Teka-teki & kejutan</span></div>
+          <div class="story-opt" data-key="genre" data-val="persahabatan yang mengharukan" onclick="selectStory(this,'genre')"><span class="so-icon">🤝</span><span class="so-name">Persahabatan</span><span class="so-desc">Hangat & menyentuh</span></div>
+          <div class="story-opt" data-key="genre" data-val="sains dan penemuan ajaib" onclick="selectStory(this,'genre')"><span class="so-icon">🔬</span><span class="so-name">Sains</span><span class="so-desc">Penemuan & eksperimen</span></div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">💥 Konflik Utama</label>
+        <div class="story-option-grid">
+          <div class="story-opt selected" data-key="conflict" data-val="menyelamatkan seseorang yang dicintai" onclick="selectStory(this,'conflict')"><span class="so-icon">💪</span><span class="so-name">Selamatkan Teman</span><span class="so-desc">Misi penyelamatan</span></div>
+          <div class="story-opt" data-key="conflict" data-val="memecahkan sebuah teka-teki besar" onclick="selectStory(this,'conflict')"><span class="so-icon">🧩</span><span class="so-name">Pecahkan Teka-teki</span><span class="so-desc">Misteri besar</span></div>
+          <div class="story-opt" data-key="conflict" data-val="menghadapi ketakutan terbesar dirinya" onclick="selectStory(this,'conflict')"><span class="so-icon">🦋</span><span class="so-name">Hadapi Ketakutan</span><span class="so-desc">Tumbuh & berani</span></div>
+          <div class="story-opt" data-key="conflict" data-val="menemukan sebuah rahasia tersembunyi" onclick="selectStory(this,'conflict')"><span class="so-icon">🗝️</span><span class="so-name">Temukan Rahasia</span><span class="so-desc">Petualangan tak terduga</span></div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <h3>📝 Ringkasan</h3>
+        <div class="summary-row"><span class="sk">Tokoh</span><span class="sv" id="sum-char">—</span></div>
+        <div class="summary-row"><span class="sk">Latar</span><span class="sv" id="sum-setting">Hutan Ajaib</span></div>
+        <div class="summary-row"><span class="sk">Genre</span><span class="sv" id="sum-genre">Petualangan</span></div>
+        <div class="summary-row"><span class="sk">Konflik</span><span class="sv" id="sum-conflict">Selamatkan Teman</span></div>
+        <div class="summary-row"><span class="sk">Panjang Cerita</span><span class="sv" id="sum-length">~300 kata (Lv 1)</span></div>
+        <div class="summary-row"><span class="sk">Jumlah Pertanyaan</span><span class="sv" id="sum-qcount">4 pertanyaan (Lv 1)</span></div>
+      </div>
+      <button class="btn btn-primary btn-full" style="font-size:15px;padding:14px" onclick="generateStory()">✨ Buat Cerita dengan AI!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ GENERATING ══════════ -->
+<div id="s-generating" class="screen">
+  <div class="gen-box">
+    <div class="gen-anim">📖</div>
+    <h2>Membuat ceritamu...</h2>
+    <p>AI sedang menulis cerita personal level <span id="gen-lv">1</span> khusus untukmu!</p>
+    <div class="gen-dots"><div class="gen-dot"></div><div class="gen-dot"></div><div class="gen-dot"></div></div>
+    <div class="gen-log" id="gen-log">Mempersiapkan tokoh...</div>
+  </div>
+</div>
+
+<!-- ══════════ READING ══════════ -->
+<div id="s-reading" class="screen">
+  <div class="reading-topbar">
+    <button class="back-btn" style="flex-shrink:0;padding:0" onclick="exitReading()">✕</button>
+    <div class="prog-wrap">
+      <div class="prog-track"><div class="prog-fill" id="read-prog" style="width:5%"></div></div>
+      <div class="prog-txt" id="read-prog-txt">Membaca...</div>
+    </div>
+    <div class="timer-pill">⏱ <span id="read-timer">0:00</span></div>
+    <div class="xp-gain-pill" id="xp-gain-pill">+0 XP</div>
+  </div>
+  <div class="main-content" id="reading-main" style="padding-bottom:0">
+    <div class="story-body">
+      <div class="story-genre-badge" id="story-badge-el"></div>
+      <h1 class="story-h1" id="story-title-el">Memuat...</h1>
+      <div class="story-byline" id="story-byline-el"></div>
+      <div class="story-loading" id="story-loading"><div class="gen-anim" style="font-size:44px">✍️</div><p>AI sedang menulis ceritamu...</p></div>
+      <div class="story-text" id="story-text-el" style="display:none"></div>
+    </div>
+    <div class="story-actions" id="story-actions" style="display:none">
+      <button class="btn btn-ghost btn-sm" onclick="exitReading()">Simpan & Keluar</button>
+      <button class="btn btn-primary btn-sm" onclick="goTo('s-quest')">Mulai Story Quest ⚔️</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ QUEST ══════════ -->
+<div id="s-quest" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goTo('s-reading')">← Cerita</button>
+    <div class="logo">⚔️ Story Quest</div>
+    <div style="width:70px"></div>
+  </div>
+  <div class="main-content">
+    <div class="quest-header">
+      <h2>⚔️ Story Quest</h2>
+      <p id="quest-lv-info">Uji pemahamanmu tentang cerita yang baru kamu baca!</p>
+      <div class="quest-score-bar">
+        <div class="quest-score" id="quest-score-display">0/4</div>
+        <div class="quest-stars" id="quest-stars">☆☆☆</div>
+      </div>
+    </div>
+    <div class="quest-body" id="quest-body">
+      <div class="empty-state"><div class="es-icon">⏳</div><p>Pertanyaan sedang disiapkan...</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TRACKER ══════════ -->
+<div id="s-tracker" class="screen">
+  <div class="topbar">
+    <div class="logo">Read<span>Track</span></div>
+    <div style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="logout()">
+      <span id="tracker-av" style="font-size:20px">🦁</span>
+      <span id="tracker-name" style="font-size:12px;font-weight:800"></span>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="tracker-hero" style="background:linear-gradient(135deg,var(--sky) 0%,#2255A4 100%)">
+      <h2>📊 Stamina Membacamu</h2>
+      <div class="tracker-hero-stats">
+        <div class="th-stat"><div class="tsv" id="tr-total-dur">0</div><div class="tsl">Total Menit Baca</div><div class="tsc" id="tr-sesi">0 sesi</div></div>
+        <div class="th-stat"><div class="tsv" id="tr-stories">0</div><div class="tsl">Cerita Selesai</div><div class="tsc" id="tr-avg-score">Skor rata: —</div></div>
+      </div>
+      <div style="margin-top:10px;background:rgba(255,255,255,.15);border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:800;opacity:.8">Total XP Terkumpul</span>
+        <span style="font-family:'Lora',serif;font-size:20px;font-weight:700" id="tr-xp">0 XP</span>
+      </div>
+    </div>
+    <div class="chart-section">
+      <h3>Durasi Baca per Sesi (menit)</h3>
+      <div class="bar-chart" id="dur-chart"></div>
+    </div>
+    <div class="divider" style="margin-bottom:16px"></div>
+    <div class="story-log">
+      <h3>📚 Riwayat Cerita</h3>
+      <div id="story-log-list"></div>
+    </div>
+    <div class="divider" style="margin-bottom:16px"></div>
+    <div class="badge-section">
+      <h3>🏅 Badge Pencapaian</h3>
+      <div class="badge-grid" id="tracker-badges"></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="bnav-item" id="bn-home2" onclick="goTo('s-home');setNav('bn-home')"><span class="bni">🏠</span>Beranda</button>
+    <button class="bnav-item" id="bn-story2" onclick="goTo('s-charmaker');setNav('bn-story')"><span class="bni">✨</span>Buat Cerita</button>
+    <button class="bnav-item" id="bn-lb2" onclick="goTo('s-leaderboard');setNav('bn-lb')"><span class="bni">🏆</span>Ranking</button>
+    <button class="bnav-item active" id="bn-tracker2" onclick="goTo('s-tracker');setNav('bn-tracker')"><span class="bni">📊</span>Tracker</button>
+  </div>
+</div>
+
+<!-- ══════════ LEADERBOARD ══════════ -->
+<div id="s-leaderboard" class="screen">
+  <div class="topbar">
+    <div class="logo">Read<span>Track</span></div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span id="lb-my-av" style="font-size:18px">🦁</span>
+      <span id="lb-my-name" style="font-size:12px;font-weight:800"></span>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="lb-header">
+      <h2>🏆 Papan Peringkat</h2>
+      <p>Siapa pembaca terhebat di kelas?</p>
+    </div>
+    <div style="padding:14px 20px 4px">
+      <div class="lb-tabs">
+        <button class="lb-tab active" id="lb-tab-xp" onclick="switchLbTab('xp')">⭐ Total XP</button>
+        <button class="lb-tab" id="lb-tab-dur" onclick="switchLbTab('dur')">⏱ Durasi Baca</button>
+        <button class="lb-tab" id="lb-tab-stories" onclick="switchLbTab('stories')">📚 Cerita</button>
+      </div>
+    </div>
+    <div class="lb-list" id="lb-list"></div>
+    <div style="padding:0 20px 20px">
+      <div style="background:var(--purple-l);border-radius:14px;padding:14px 16px;border:1.5px solid rgba(123,94,167,.3)">
+        <div style="font-size:12px;font-weight:800;color:var(--purple);margin-bottom:4px">📢 INFO LEADERBOARD</div>
+        <div style="font-size:12px;font-weight:600;color:var(--ink2);line-height:1.6">Data leaderboard dibagikan dengan semua pengguna di perangkat ini. Baca lebih banyak untuk naik peringkat! 🚀</div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="bnav-item" id="bn-home3" onclick="goTo('s-home');setNav('bn-home')"><span class="bni">🏠</span>Beranda</button>
+    <button class="bnav-item" id="bn-story3" onclick="goTo('s-charmaker');setNav('bn-story')"><span class="bni">✨</span>Buat Cerita</button>
+    <button class="bnav-item active" id="bn-lb3" onclick="goTo('s-leaderboard');setNav('bn-lb')"><span class="bni">🏆</span>Ranking</button>
+    <button class="bnav-item" id="bn-tracker3" onclick="goTo('s-tracker');setNav('bn-tracker')"><span class="bni">📊</span>Tracker</button>
+  </div>
+</div>
+
+<!-- ══════════════════════ SCRIPT ══════════════════════ -->
+<script>
+// ─── LEVEL SYSTEM ───────────────────────────────────────────
+const LEVELS = [
+  { lv:1, name:'Pemula',    icon:'🌱', color:'var(--lv1)', minXP:0,   maxXP:100,  words:300,  qCount:4,  perks:['Cerita pendek (~300 kata)','4 pertanyaan quest','Latar dasar tersedia'] },
+  { lv:2, name:'Penjelajah',icon:'🌿', color:'var(--lv2)', minXP:100, maxXP:250,  words:450,  qCount:5,  perks:['Cerita sedang (~450 kata)','5 pertanyaan quest','Unlock: Istana Awan','Bonus XP +10%'] },
+  { lv:3, name:'Petualang', icon:'🌳', color:'var(--lv3)', minXP:250, maxXP:500,  words:600,  qCount:6,  perks:['Cerita panjang (~600 kata)','6 pertanyaan quest','Unlock: Sekolah Sihir','Bonus XP +20%'] },
+  { lv:4, name:'Pahlawan',  icon:'⭐', color:'var(--lv4)', minXP:500, maxXP:900,  words:800,  qCount:7,  perks:['Cerita epik (~800 kata)','7 pertanyaan quest','Unlock: Planet Antarbintang','Bonus XP +30%'] },
+  { lv:5, name:'Legenda',   icon:'🏆', color:'var(--lv5)', minXP:900, maxXP:9999, words:1000, qCount:8,  perks:['Cerita epik penuh (~1000 kata)','8 pertanyaan quest','Semua latar terbuka!','Bonus XP +50%'] },
+];
+
+function getLevelData(xp) {
+  for (let i = LEVELS.length-1; i >= 0; i--) {
+    if (xp >= LEVELS[i].minXP) return LEVELS[i];
+  }
+  return LEVELS[0];
+}
+
+function getXpForReading(mins) {
+  const base = Math.min(mins * 3, 30);
+  const lv = getLevelData(state.stats.xp);
+  const bonus = [1, 1.1, 1.2, 1.3, 1.5][lv.lv - 1];
+  return Math.round(base * bonus);
+}
+
+function getXpForQuest(score, total) {
+  const base = Math.round((score / total) * 20 + (score === total ? 10 : 0));
+  const lv = getLevelData(state.stats.xp);
+  const bonus = [1, 1.1, 1.2, 1.3, 1.5][lv.lv - 1];
+  return Math.round(base * bonus);
+}
+
+// ─── STATE ─────────────────────────────────────────────────
+const defaultState = {
+  user: { name:'', avatar:'🦁' },
+  char: { name:'', gender:'Laki-laki', age:'9 tahun', hair:'rambut pendek hitam', outfit:'seragam sekolah', item:'ransel kuning', trait:'pemberani dan tidak kenal takut', power:'' },
+  story: { setting:'sebuah hutan ajaib yang penuh misteri', genre:'petualangan seru', conflict:'menyelamatkan seseorang yang dicintai' },
+  currentStory: { title:'', text:'', questions:[] },
+  session: { startTime:0, timer:null, elapsed:0 },
+  stats: { xp:0, totalDur:0, sessions:[], completedStories:[] },
+  quest: { answers:[], score:0 }
+};
+
+let state = JSON.parse(JSON.stringify(defaultState));
+try {
+  const saved = localStorage.getItem('rt2_data');
+  if (saved) state = {...defaultState, ...JSON.parse(saved)};
+  if (!state.stats.xp) state.stats.xp = 0;
+} catch(e){}
+
+function save() {
+  try { localStorage.setItem('rt2_data', JSON.stringify(state)); } catch(e){}
+}
+
+// ─── LEADERBOARD SHARED DATA ──────────────────────────────
+function saveLbEntry() {
+  if (!state.user.name) return;
+  try {
+    let lb = JSON.parse(localStorage.getItem('rt2_lb') || '[]');
+    lb = lb.filter(e => e.name !== state.user.name);
+    lb.push({
+      name: state.user.name,
+      avatar: state.user.avatar,
+      xp: state.stats.xp,
+      dur: state.stats.totalDur,
+      stories: state.stats.completedStories.length,
+      lv: getLevelData(state.stats.xp).lv
+    });
+    localStorage.setItem('rt2_lb', JSON.stringify(lb));
+  } catch(e){}
+}
+
+function getLbData() {
+  try { return JSON.parse(localStorage.getItem('rt2_lb') || '[]'); } catch(e){ return []; }
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  if (id==='s-home') refreshHome();
+  if (id==='s-tracker') refreshTracker();
+  if (id==='s-storysetup') refreshStorySetup();
+  if (id==='s-leaderboard') refreshLeaderboard();
+  if (id==='s-levelmap') refreshLevelMap();
+  if (id==='s-quest') buildQuest();
+}
+
+function setNav(id) {
+  document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
+  ['',2,3].forEach(s => {
+    const el = document.getElementById(id+s);
+    if (el) el.classList.add('active');
+  });
+}
+
+// ─── TOAST ──────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ─── LOGIN ───────────────────────────────────────────────
+function selectAv(el) {
+  document.querySelectorAll('.av-opt').forEach(a => a.classList.remove('selected'));
+  el.classList.add('selected');
+  state.user.avatar = el.dataset.av;
+}
+
+function doLogin() {
+  const n = document.getElementById('login-name').value.trim();
+  if (!n) { toast('Masukkan namamu dulu ya! 😊'); return; }
+  state.user.name = n;
+  save();
+  goTo('s-home'); setNav('bn-home');
+}
+
+function logout() {
+  if (confirm('Keluar dari akun ' + state.user.name + '?')) { goTo('s-login'); }
+}
+
+// ─── LEVEL UP ────────────────────────────────────────────
+function checkLevelUp(oldXP, newXP) {
+  const oldLv = getLevelData(oldXP);
+  const newLv = getLevelData(newXP);
+  if (newLv.lv > oldLv.lv) {
+    showLevelUp(newLv);
+    return true;
+  }
+  return false;
+}
+
+function showLevelUp(lv) {
+  document.getElementById('lu-emoji').textContent = lv.icon;
+  document.getElementById('lu-title').textContent = `Level ${lv.lv}: ${lv.name}! 🎉`;
+  document.getElementById('lu-sub').textContent = `Luar biasa! Kamu telah naik ke level ${lv.lv}. Cerita baru menunggumu!`;
+  document.getElementById('lu-perks').innerHTML = lv.perks.map(p => `<div class="perk">✅ ${p}</div>`).join('');
+  document.getElementById('levelup-modal').classList.add('show');
+}
+
+function closeLevelUp() {
+  document.getElementById('levelup-modal').classList.remove('show');
+}
+
+// ─── ADD XP ──────────────────────────────────────────────
+function addXP(amount) {
+  const oldXP = state.stats.xp;
+  state.stats.xp += amount;
+  save();
+  saveLbEntry();
+  checkLevelUp(oldXP, state.stats.xp);
+}
+
+// ─── CHARACTER MAKER ─────────────────────────────────────
+let charStep = 1;
+
+function selectTrait(el, key) {
+  el.closest('[class*="grid"]').querySelectorAll('.trait-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  state.char[key] = el.dataset.val;
+}
+
+function selectApp(el, key) {
+  el.closest('.appearance-grid').querySelectorAll('.ap-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  state.char[key] = el.dataset.val;
+}
+
+function nextCharStep(from) {
+  if (from===1) {
+    const n = document.getElementById('char-name').value.trim();
+    if (!n) { toast('Masukkan nama tokohmu dulu! 😊'); return; }
+    state.char.name = n;
+  }
+  if (from===3) {
+    state.char.power = document.getElementById('char-power').value.trim();
+    buildCharPreview();
+  }
+  charStep = from+1;
+  showCharStep(charStep);
+}
+
+function prevCharStep(from) { charStep=from-1; showCharStep(charStep); }
+
+function showCharStep(n) {
+  for(let i=1;i<=4;i++){
+    const el=document.getElementById('char-step'+i);
+    if(el) el.style.display=i===n?'block':'none';
+    const cs=document.getElementById('cstep'+i);
+    if(cs){ cs.className='cs'; if(i<n) cs.classList.add('done'); if(i===n) cs.classList.add('active'); }
+  }
+  document.getElementById('step-label').textContent=`Langkah ${n} dari 4`;
+}
+
+const traitIcons = {'pemberani dan tidak kenal takut':'🦁','sangat cerdas dan suka berpikir':'🧠','baik hati dan selalu menolong':'🤝','sangat penasaran dan suka bertanya':'🔍','kreatif dan imajinatif':'🎨','tangguh dan pantang menyerah':'💪'};
+
+function buildCharPreview() {
+  const c=state.char;
+  const av=traitIcons[c.trait]||'⭐';
+  document.getElementById('prev-char-av').textContent=av;
+  document.getElementById('prev-char-name').textContent=c.name+', '+c.age;
+  document.getElementById('prev-char-desc').textContent=c.trait+', mengenakan '+c.outfit;
+  document.getElementById('story-prev-av').textContent=av;
+  document.getElementById('story-prev-name').textContent=c.name;
+  document.getElementById('story-prev-trait').textContent=c.trait;
+  save();
+}
+
+// ─── STORY SETUP ─────────────────────────────────────────
+const settingShort = {'sebuah hutan ajaib yang penuh misteri':'Hutan Ajaib','kota modern yang sibuk':'Kota Modern','desa terpencil di pegunungan':'Desa Pegunungan','dunia bawah laut yang bercahaya':'Bawah Laut','istana di atas awan':'Istana Awan','sekolah sihir yang tersembunyi':'Sekolah Sihir','planet antarbintang yang asing':'Planet Antarbintang','kerajaan tersembunyi di dalam gunung berapi':'Kerajaan Gunung Api'};
+const genreShort = {'petualangan seru':'Petualangan','misteri yang harus dipecahkan':'Misteri','persahabatan yang mengharukan':'Persahabatan','sains dan penemuan ajaib':'Sains'};
+const conflictShort = {'menyelamatkan seseorang yang dicintai':'Selamatkan Teman','memecahkan sebuah teka-teki besar':'Pecahkan Teka-teki','menghadapi ketakutan terbesar dirinya':'Hadapi Ketakutan','menemukan sebuah rahasia tersembunyi':'Temukan Rahasia'};
+
+function refreshStorySetup() {
+  const lv = getLevelData(state.stats.xp);
+  // Lock/unlock settings
+  const locks = {set_awan:2, set_sihir:3, set_planet:4, set_gunung:5};
+  Object.entries(locks).forEach(([id, minLv]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (lv.lv >= minLv) {
+      el.classList.remove('locked');
+      el.onclick = () => selectStory(el, 'setting');
+      el.querySelector('.so-desc').textContent = ['','','Megah & luas','Magis & misterius','Luar angkasa!','Panas & penuh bahaya'][minLv] || '';
+    } else {
+      el.classList.add('locked');
+      el.onclick = () => toast(`🔒 Unlock di Level ${minLv}!`);
+    }
+  });
+  document.getElementById('level-story-info').innerHTML =
+    `<strong>Level ${lv.lv} — ${lv.name}</strong>: cerita ~${lv.words} kata, ${lv.qCount} pertanyaan quest`;
+  document.getElementById('sum-char').textContent = state.char.name || '—';
+  document.getElementById('sum-setting').textContent = settingShort[state.story.setting] || state.story.setting;
+  document.getElementById('sum-genre').textContent = genreShort[state.story.genre] || state.story.genre;
+  document.getElementById('sum-conflict').textContent = conflictShort[state.story.conflict] || state.story.conflict;
+  document.getElementById('sum-length').textContent = `~${lv.words} kata (Lv ${lv.lv})`;
+  document.getElementById('sum-qcount').textContent = `${lv.qCount} pertanyaan (Lv ${lv.lv})`;
+}
+
+function selectStory(el, key) {
+  el.closest('.story-option-grid').querySelectorAll('.story-opt:not(.locked)').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  state.story[key] = el.dataset.val;
+  document.getElementById('sum-'+key.replace('setting','setting').replace('genre','genre').replace('conflict','conflict')).textContent =
+    (settingShort[el.dataset.val] || genreShort[el.dataset.val] || conflictShort[el.dataset.val] || el.dataset.val);
+}
+
+// ─── STORY GENERATION ────────────────────────────────────
+async function generateStory() {
+  const lv = getLevelData(state.stats.xp);
+  document.getElementById('gen-lv').textContent = lv.lv;
+  goTo('s-generating');
+
+  const logs = ['Mempersiapkan tokoh...','Membangun dunia cerita...','Menulis alur '+lv.name+'...','Menambahkan sentuhan ajaib...','Hampir selesai...'];
+  let li=0;
+  const logEl = document.getElementById('gen-log');
+  const li2 = setInterval(()=>{ if(li<logs.length) logEl.textContent=logs[li++]; }, 2000);
+
+  const c=state.char, s=state.story;
+  const powerLine = c.power ? ` Kemampuan spesial: ${c.power}.` : '';
+  const complexityNote = lv.lv>=3 ? 'Gunakan kosakata yang lebih kaya dan kalimat yang lebih kompleks.' : 'Gunakan bahasa yang mudah dipahami anak SD.';
+
+  const prompt = `Tulis cerita pendek dalam Bahasa Indonesia untuk siswa SD kelas 4-6.
+
+Tokoh: ${c.name}, ${c.gender}, ${c.age}, ${c.hair}, ${c.outfit}, membawa ${c.item}, sifat: ${c.trait}.${powerLine}
+Latar: ${s.setting}. Genre: ${s.genre}. Konflik: ${s.conflict}.
+
+Ketentuan:
+- Panjang TEPAT sekitar ${lv.words} kata
+- ${complexityNote}
+- Akhiri dengan cliffhanger yang membuat pembaca penasaran
+- JANGAN tulis judul di dalam teks cerita
+- Teks biasa tanpa markdown
+
+Setelah cerita, tulis di baris baru:
+JUDUL: [judul menarik, max 8 kata]`;
+
+  try {
+    const res = await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    clearInterval(li2);
+    const full = data.content[0].text;
+    const titleMatch = full.match(/JUDUL:\s*(.+)/);
+    const title = titleMatch ? titleMatch[1].trim() : `${c.name} di ${settingShort[s.setting]||s.setting}`;
+    const storyText = full.replace(/JUDUL:.+/,'').trim();
+    state.currentStory = {title, text:storyText, questions:[], level:lv.lv};
+    await generateQuestions(storyText, lv.qCount, lv.lv);
+    startReading();
+  } catch(e) {
+    clearInterval(li2);
+    state.currentStory = {
+      title:`${c.name} dan Petualangan di ${settingShort[s.setting]||s.setting}`,
+      text:`${c.name} adalah anak ${c.age} yang ${c.trait}. Setiap hari, ia selalu membawa ${c.item} miliknya ke mana pun pergi.\n\nSuatu pagi, ${c.name} menemukan peta tua yang menunjukkan jalan ke ${s.setting}. Tanpa pikir panjang, ia pun berangkat dengan penuh semangat.\n\nPerjalanan tidaklah mudah. Banyak rintangan yang harus dihadapi. Namun dengan sifatnya yang ${c.trait}, ${c.name} terus melangkah maju.\n\nDan saat tikungan terakhir terlewati, sesuatu yang mengejutkan sedang menunggunya di sana...`,
+      questions:[], level:lv.lv
+    };
+    buildFallbackQuestions(lv.qCount);
+    startReading();
+  }
+}
+
+async function generateQuestions(storyText, count, lvNum) {
+  const c = state.char;
+  const qTypes = count <= 4
+    ? ['Pemahaman Isi','Pesan Moral','Prediksi Cerita','Detail Tokoh']
+    : count <= 5
+    ? ['Pemahaman Isi','Pesan Moral','Prediksi Cerita','Detail Tokoh','Kosakata']
+    : count <= 6
+    ? ['Pemahaman Isi','Pesan Moral','Prediksi Cerita','Detail Tokoh','Kosakata','Urutan Alur']
+    : count <= 7
+    ? ['Pemahaman Isi','Pesan Moral','Prediksi Cerita','Detail Tokoh','Kosakata','Urutan Alur','Analisis Karakter']
+    : ['Pemahaman Isi','Pesan Moral','Prediksi Cerita','Detail Tokoh','Kosakata','Urutan Alur','Analisis Karakter','Evaluasi Cerita'];
+
+  const complexityNote = lvNum >= 3 ? 'Buat pertanyaan yang lebih analitis dan kritis.' : 'Buat pertanyaan yang jelas dan mudah dipahami.';
+
+  const prompt = `Berdasarkan cerita tentang ${c.name}:
+"${storyText.substring(0,900)}..."
+
+Buat TEPAT ${count} pertanyaan pemahaman untuk siswa SD. ${complexityNote}
+Tipe pertanyaan yang HARUS ada: ${qTypes.join(', ')}.
+
+Kembalikan HANYA JSON tanpa teks lain:
+[{"type":"...","q":"...","opts":["A...","B...","C...","D..."],"ans":0}]
+"ans" = index jawaban benar (0-3). Bahasa Indonesia.`;
+
+  try {
+    const res = await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:prompt}]})
+    });
+    const data = await res.json();
+    const text = data.content[0].text.replace(/```json|```/g,'').trim();
+    state.currentStory.questions = JSON.parse(text);
+  } catch(e) { buildFallbackQuestions(count); }
+}
+
+function buildFallbackQuestions(count) {
+  const c = state.char;
+  const base = [
+    {type:'Pemahaman Isi',q:`Apa yang pertama kali ditemukan ${c.name} dalam cerita?`,opts:['Sebuah peta tua','Kunci emas','Surat misterius','Buku harian'],ans:0},
+    {type:'Pesan Moral',q:'Pesan moral apa yang paling tepat dari cerita ini?',opts:['Jangan pergi sendirian','Keberanian membawa hal luar biasa','Bawa bekal cukup','Ikuti orang dewasa'],ans:1},
+    {type:'Prediksi Cerita',q:`Menurutmu apa yang akan terjadi selanjutnya pada ${c.name}?`,opts:['Pulang ke rumah','Menemukan makhluk ajaib','Bertemu teman baru','Tersesat'],ans:1},
+    {type:'Detail Tokoh',q:`Sifat utama ${c.name} dalam cerita adalah?`,opts:['Pemalu',''+c.trait.split(' ')[0],'Pemalas','Penakut'],ans:1},
+    {type:'Kosakata',q:'Kata "terpencil" dalam cerita berarti?',opts:['Sangat dekat','Jauh dari keramaian','Sangat besar','Sangat terang'],ans:1},
+    {type:'Urutan Alur',q:'Urutan kejadian yang benar dalam cerita adalah?',opts:['Menemukan peta → berangkat → rintangan','Rintangan → peta → berangkat','Berangkat → peta → rintangan','Peta → rintangan → berangkat'],ans:0},
+    {type:'Analisis Karakter',q:`Mengapa ${c.name} memutuskan untuk pergi berpetualang?`,opts:['Dipaksa orang lain','Didorong rasa penasaran & keberanian','Karena tidak ada kegiatan','Karena disuruh guru'],ans:1},
+    {type:'Evaluasi Cerita',q:'Bagian mana yang paling menegangkan dalam cerita?',opts:['Saat menemukan peta','Saat menghadapi rintangan di perjalanan','Saat berangkat dari rumah','Saat cerita berakhir'],ans:1}
+  ];
+  state.currentStory.questions = base.slice(0, count);
+}
+
+// ─── READING ─────────────────────────────────────────────
+const genreColors={'petualangan seru':'badge-rust','misteri yang harus dipecahkan':'badge-sky','persahabatan yang mengharukan':'badge-forest','sains dan penemuan ajaib':'badge-amber'};
+const genreLabels={'petualangan seru':'⚔️ Petualangan','misteri yang harus dipecahkan':'🔍 Misteri','persahabatan yang mengharukan':'🤝 Persahabatan','sains dan penemuan ajaib':'🔬 Sains'};
+const genreCover={'petualangan seru':'#FCE8DC','misteri yang harus dipecahkan':'#D8E8FC','persahabatan yang mengharukan':'#D6EDE0','sains dan penemuan ajaib':'#FEF0D0'};
+
+let xpGained = 0;
+
+function startReading() {
+  goTo('s-reading');
+  xpGained = 0;
+  document.getElementById('xp-gain-pill').textContent = '+0 XP';
+  const cs = state.currentStory;
+  document.getElementById('story-title-el').textContent = cs.title;
+  const gc = genreColors[state.story.genre]||'badge-amber';
+  const gl = genreLabels[state.story.genre]||state.story.genre;
+  const lv = getLevelData(state.stats.xp);
+  document.getElementById('story-badge-el').innerHTML = `<span class="badge ${gc}">${gl}</span>&nbsp;<span class="badge badge-purple">${lv.icon} Lv ${lv.lv} ${lv.name}</span>`;
+  document.getElementById('story-byline-el').innerHTML = `Kisah <span>${state.char.name}</span> · ${state.char.age} · ${settingShort[state.story.setting]||state.story.setting}`;
+  document.getElementById('story-loading').style.display='block';
+  document.getElementById('story-text-el').style.display='none';
+  document.getElementById('story-actions').style.display='none';
+
+  setTimeout(() => {
+    const textEl = document.getElementById('story-text-el');
+    document.getElementById('story-loading').style.display='none';
+    textEl.style.display='block';
+    const paras = cs.text.split('\n').filter(p=>p.trim());
+    textEl.innerHTML = paras.map((p,i)=>`<p class="${i===0?'dropcap':''}">${p}</p>`).join('');
+    document.getElementById('story-actions').style.display='flex';
+    document.getElementById('read-prog').style.width='100%';
+    document.getElementById('read-prog-txt').textContent='Selesai dibaca! ✅';
+  }, 700);
+
+  state.session.startTime = Date.now();
+  state.session.elapsed = 0;
+  if (state.session.timer) clearInterval(state.session.timer);
+  state.session.timer = setInterval(() => {
+    state.session.elapsed = Math.floor((Date.now()-state.session.startTime)/1000);
+    const m = Math.floor(state.session.elapsed/60);
+    const s2 = state.session.elapsed%60;
+    document.getElementById('read-timer').textContent=`${m}:${s2.toString().padStart(2,'0')}`;
+    // Update XP gain preview
+    const mins = Math.max(1, Math.round(state.session.elapsed/60));
+    xpGained = getXpForReading(mins);
+    document.getElementById('xp-gain-pill').textContent=`+${xpGained} XP`;
+  }, 1000);
+}
+
+function exitReading() {
+  if (state.session.timer) clearInterval(state.session.timer);
+  const mins = Math.max(1, Math.round(state.session.elapsed/60));
+  state.stats.totalDur += mins;
+  state.stats.sessions.push({date: new Date().toLocaleDateString('id'), dur: mins});
+  const xp = getXpForReading(mins);
+  addXP(xp);
+  toast(`⏱ ${mins} menit baca tersimpan! +${xp} XP`);
+  goTo('s-home'); setNav('bn-home');
+}
+
+// ─── QUEST ───────────────────────────────────────────────
+function buildQuest() {
+  const qs = state.currentStory.questions;
+  const lv = getLevelData(state.stats.xp);
+  document.getElementById('quest-lv-info').textContent = `Level ${lv.lv}: ${qs.length} pertanyaan menunggumu!`;
+  document.getElementById('quest-score-display').textContent = `0/${qs.length}`;
+  const body = document.getElementById('quest-body');
+  if (!qs||!qs.length) {
+    body.innerHTML='<div class="empty-state"><div class="es-icon">⚠️</div><p>Baca cerita dulu ya!</p></div>';
+    return;
+  }
+  state.quest = {answers:new Array(qs.length).fill(-1), score:0};
+  body.innerHTML = qs.map((q,qi)=>`
+    <div class="q-card" id="qcard-${qi}">
+      <div class="q-type-tag">${q.type}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-opts">
+        ${q.opts.map((o,oi)=>`<button class="q-opt" id="qopt-${qi}-${oi}" onclick="answerQ(${qi},${oi},${q.ans})">
+          <span class="ol">${String.fromCharCode(65+oi)}</span>${o}
+        </button>`).join('')}
+      </div>
+    </div>`).join('') + '<div id="quest-result-area"></div>';
+  updateQuestScore();
+}
+
+function answerQ(qi, oi, correct) {
+  const opts = document.querySelectorAll(`#qcard-${qi} .q-opt`);
+  opts.forEach(o=>{o.classList.add('disabled');o.onclick=null;});
+  const chosen = document.getElementById(`qopt-${qi}-${oi}`);
+  if (oi===correct) { chosen.classList.add('correct'); state.quest.answers[qi]=1; }
+  else { chosen.classList.add('wrong'); document.getElementById(`qopt-${qi}-${correct}`).classList.add('correct'); state.quest.answers[qi]=0; }
+  state.quest.score = state.quest.answers.filter(a=>a===1).length;
+  updateQuestScore();
+  if (state.quest.answers.every(a=>a>=0)) showQuestResult();
+}
+
+function updateQuestScore() {
+  const total = state.currentStory.questions.length;
+  const sc = state.quest.score;
+  document.getElementById('quest-score-display').textContent=`${sc}/${total}`;
+  const pct = total ? sc/total : 0;
+  document.getElementById('quest-stars').textContent = pct>=0.75?'★★★':pct>=0.5?'★★☆':'★☆☆';
+}
+
+function showQuestResult() {
+  const total = state.currentStory.questions.length;
+  const sc = state.quest.score;
+  const pct = Math.round(sc/total*100);
+  const xp = getXpForQuest(sc, total);
+  const emoji = pct>=75?'🎉':pct>=50?'😊':'💪';
+  const msg = pct>=75?'Luar biasa! Pemahaman ceritamu sangat baik!':pct>=50?'Bagus! Terus berlatih membaca ya!':'Jangan menyerah! Coba baca lagi dengan teliti.';
+  const stars = pct>=75?'★★★':pct>=50?'★★☆':'★☆☆';
+
+  // Save & award XP
+  const genreIcons={'petualangan seru':'⚔️','misteri yang harus dipecahkan':'🔍','persahabatan yang mengharukan':'🤝','sains dan penemuan ajaib':'🔬'};
+  const mins = Math.max(1, Math.round(state.session.elapsed/60));
+  state.stats.completedStories.push({
+    title:state.currentStory.title, icon:genreIcons[state.story.genre]||'📖',
+    genre:state.story.genre, dur:mins, score:pct, stars,
+    date:new Date().toLocaleDateString('id'), xp, level:state.currentStory.level||1
+  });
+  addXP(xp);
+  save();
+
+  document.getElementById('quest-result-area').innerHTML = `
+    <div class="quest-result">
+      <div class="result-emoji">${emoji}</div>
+      <div class="result-score">${pct}%</div>
+      <div class="quest-stars" style="font-size:26px;margin:6px 0">${stars}</div>
+      <div class="result-msg">${msg}</div>
+      <div class="result-xp">+${xp} XP diperoleh! ⭐</div>
+      <div class="result-btns">
+        <button class="btn btn-ghost btn-sm" onclick="goTo('s-home');setNav('bn-home')">🏠 Beranda</button>
+        <button class="btn btn-amber btn-sm" onclick="goTo('s-tracker');setNav('bn-tracker')">📊 Tracker</button>
+        <button class="btn btn-primary btn-sm" onclick="goTo('s-charmaker');setNav('bn-story')">✨ Cerita Baru</button>
+      </div>
+    </div>`;
+}
+
+// ─── LEVEL MAP ───────────────────────────────────────────
+function refreshLevelMap() {
+  const curXP = state.stats.xp;
+  const curLv = getLevelData(curXP);
+  document.getElementById('lm-total-xp').textContent = curXP + ' XP';
+  const next = LEVELS.find(l=>l.lv===curLv.lv+1);
+  const pct = next ? Math.min(100,Math.round((curXP-curLv.minXP)/(next.minXP-curLv.minXP)*100)) : 100;
+  document.getElementById('lm-bar').style.width = pct+'%';
+  document.getElementById('lm-next').textContent = next ? `${curXP-curLv.minXP}/${next.minXP-curLv.minXP} XP menuju Level ${next.lv}` : 'Level Maksimal Tercapai! 🏆';
+
+  const mapEl = document.getElementById('level-map-list');
+  mapEl.innerHTML = LEVELS.map(lv => {
+    const isActive = lv.lv === curLv.lv;
+    const isLocked = lv.lv > curLv.lv;
+    const isDone = lv.lv < curLv.lv;
+    return `<div class="level-card ${isLocked?'locked-lv':''}" style="background:${isActive?lv.color+'22':'var(--bg2)'};border-color:${isActive?lv.color:'var(--border)'}">
+      ${isActive?`<div class="current-tag" style="background:${lv.color}">⚡ Level Kamu</div>`:''}
+      <div class="lc-header">
+        <div class="lc-icon">${isDone?'✅':isLocked?'🔒':lv.icon}</div>
+        <div>
+          <div class="lc-name">Level ${lv.lv} — ${lv.name}</div>
+          <div class="lc-sub">${lv.minXP}–${lv.maxXP===9999?'∞':lv.maxXP} XP ${isActive?'(kamu di sini!)':isDone?'(selesai)':''}</div>
+        </div>
+      </div>
+      <div class="lc-perks">${lv.perks.map(p=>`<div class="lc-perk" style="color:${isLocked?'var(--muted)':'var(--ink2)'}">✦ ${p}</div>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── TRACKER ─────────────────────────────────────────────
+function refreshTracker() {
+  document.getElementById('tracker-av').textContent = state.user.avatar;
+  document.getElementById('tracker-name').textContent = state.user.name;
+  const s=state.stats, completed=s.completedStories, sessions=s.sessions;
+  document.getElementById('tr-total-dur').textContent = s.totalDur;
+  document.getElementById('tr-stories').textContent = completed.length;
+  document.getElementById('tr-sesi').textContent = sessions.length+' sesi';
+  document.getElementById('tr-xp').textContent = s.xp+' XP';
+  const avg = completed.length ? Math.round(completed.reduce((a,b)=>a+b.score,0)/completed.length) : null;
+  document.getElementById('tr-avg-score').textContent = avg ? `Skor rata: ${avg}%` : 'Mulai baca!';
+
+  const chartEl=document.getElementById('dur-chart');
+  const last7=sessions.slice(-7);
+  if (!last7.length) {
+    chartEl.innerHTML='<p style="font-size:12px;color:var(--muted);font-weight:600;padding:10px 0">Belum ada data.</p>';
+  } else {
+    const maxV=Math.max(...last7.map(s=>s.dur),1);
+    const lvColors=['#78909C','#66BB6A','#42A5F5','#AB47BC','#FF7043'];
+    chartEl.innerHTML=last7.map((s2,i)=>`<div class="bar-col">
+      <div class="bar-val">${s2.dur}</div>
+      <div class="bar-rect" style="height:${Math.max(6,(s2.dur/maxV)*100)}px;background:${lvColors[i%lvColors.length]}"></div>
+      <div class="bar-day">${s2.date.split('/').slice(0,2).join('/')}</div>
+    </div>`).join('');
+  }
+
+  const logEl=document.getElementById('story-log-list');
+  if (!completed.length) {
+    logEl.innerHTML='<div class="empty-state" style="padding:16px"><div class="es-icon">📭</div><p style="margin:0">Belum ada cerita selesai.</p></div>';
+  } else {
+    logEl.innerHTML=[...completed].reverse().slice(0,6).map(s2=>`
+      <div class="log-item">
+        <div class="log-cover" style="background:var(--amber-l)">${s2.icon}</div>
+        <div class="log-info"><strong>${s2.title}</strong><span>${s2.dur} mnt · ${s2.date} · Lv ${s2.level||1}</span></div>
+        <div class="log-right"><div class="log-stars">${s2.stars}</div><div class="log-xp">+${s2.xp||0} XP</div></div>
+      </div>`).join('');
+  }
+
+  const BADGES=[
+    {icon:'🌱',name:'Tunas Literasi',desc:'1 cerita selesai',ok:completed.length>=1},
+    {icon:'🌿',name:'Pembaca Aktif',desc:'3 cerita selesai',ok:completed.length>=3},
+    {icon:'🌳',name:'Pembaca Sejati',desc:'7 cerita selesai',ok:completed.length>=7},
+    {icon:'⭐',name:'Bintang Quest',desc:'Skor quest 100%',ok:completed.some(s=>s.score===100)},
+    {icon:'🔥',name:'Semangat Baja',desc:'5 sesi baca',ok:sessions.length>=5},
+    {icon:'⚡',name:'Level 3',desc:'Capai level 3',ok:getLevelData(s.xp).lv>=3},
+    {icon:'🏆',name:'Juara Legenda',desc:'Capai level 5',ok:getLevelData(s.xp).lv>=5},
+    {icon:'💎',name:'500 XP',desc:'Kumpulkan 500 XP',ok:s.xp>=500},
+    {icon:'🕐',name:'Pembaca Tekun',desc:'30 menit total',ok:s.totalDur>=30},
+  ];
+  const bdgHtml=BADGES.map(b=>`<div class="bdg${b.ok?'':' locked'}"><div class="bi">${b.icon}</div><div class="bn">${b.name}</div><div class="bs">${b.desc}</div></div>`).join('');
+  document.getElementById('tracker-badges').innerHTML=bdgHtml;
+  document.getElementById('home-badge-grid').innerHTML=BADGES.filter(b=>b.ok).slice(0,6).map(b=>`<div class="bdg"><div class="bi">${b.icon}</div><div class="bn">${b.name}</div><div class="bs">${b.desc}</div></div>`).join('')||'<p style="font-size:13px;color:var(--muted);font-weight:600;grid-column:1/-1">Baca cerita untuk dapat badge pertamamu! 🌱</p>';
+}
+
+// ─── LEADERBOARD ─────────────────────────────────────────
+let lbTab = 'xp';
+
+function switchLbTab(tab) {
+  lbTab = tab;
+  document.querySelectorAll('.lb-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('lb-tab-'+tab).classList.add('active');
+  renderLb();
+}
+
+function refreshLeaderboard() {
+  document.getElementById('lb-my-av').textContent = state.user.avatar;
+  document.getElementById('lb-my-name').textContent = state.user.name;
+  saveLbEntry();
+  renderLb();
+}
+
+function renderLb() {
+  let data = getLbData();
+  const sortKey = {xp:'xp',dur:'dur',stories:'stories'}[lbTab]||'xp';
+  const label = {xp:'XP',dur:'mnt',stories:'cerita'}[lbTab]||'XP';
+  data.sort((a,b)=>b[sortKey]-a[sortKey]);
+
+  const listEl = document.getElementById('lb-list');
+  if (!data.length) {
+    listEl.innerHTML='<div class="empty-state"><div class="es-icon">🏆</div><h3>Belum ada pemain</h3><p>Jadilah yang pertama masuk leaderboard!</p></div>';
+    return;
+  }
+
+  const medals=['🥇','🥈','🥉'];
+  const rankClass=['top1','top2','top3'];
+  listEl.innerHTML=data.map((e,i)=>{
+    const isMe = e.name===state.user.name;
+    const lv = LEVELS.find(l=>l.lv===e.lv)||LEVELS[0];
+    const rankLabel = i<3 ? `<span style="font-size:20px">${medals[i]}</span>` : `<span class="lb-rank">#${i+1}</span>`;
+    return `<div class="lb-item ${i<3?rankClass[i]:''} ${isMe?'me':''}">
+      ${rankLabel}
+      <div class="lb-av">${e.avatar}</div>
+      <div class="lb-info">
+        <strong>${e.name} ${isMe?'<span class="me-tag">Kamu</span>':''}</strong>
+        <span>${lv.icon} Lv ${e.lv} ${lv.name}</span>
+      </div>
+      <div class="lb-score">
+        <span class="ls-val">${e[sortKey]}</span>
+        <span class="ls-lbl">${label}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── HOME REFRESH ─────────────────────────────────────────
+function refreshHome() {
+  document.getElementById('home-av').textContent = state.user.avatar;
+  document.getElementById('home-name').textContent = state.user.name;
+  document.getElementById('hero-name').textContent = state.user.name;
+  const lv = getLevelData(state.stats.xp);
+  const next = LEVELS.find(l=>l.lv===lv.lv+1);
+  const pct = next ? Math.min(100,Math.round((state.stats.xp-lv.minXP)/(next.minXP-lv.minXP)*100)) : 100;
+
+  document.getElementById('hero-lv-badge').textContent = `${lv.icon} ${lv.name}`;
+  document.getElementById('hero-lv-badge').style.background = lv.color;
+  document.getElementById('hero-lv-name').textContent = `Level ${lv.lv} — ${lv.name}`;
+  document.getElementById('hero-lv-xp').textContent = next ? `${state.stats.xp-lv.minXP}/${next.minXP-lv.minXP} XP` : 'MAX LEVEL';
+  document.getElementById('hero-lv-bar').style.width = pct+'%';
+  document.getElementById('hero-total-xp').textContent = state.stats.xp+' XP';
+
+  const s=state.stats;
+  document.getElementById('hs-dur').textContent = s.totalDur;
+  document.getElementById('hs-stories').textContent = s.completedStories.length;
+  const avg = s.completedStories.length ? Math.round(s.completedStories.reduce((a,b)=>a+b.score,0)/s.completedStories.length)+'%' : '—';
+  document.getElementById('hs-score').textContent = avg;
+
+  const ca=document.getElementById('continue-area');
+  const cs=state.currentStory;
+  if (cs&&cs.title) {
+    ca.innerHTML=`<div class="continue-card" onclick="goTo('s-reading')">
+      <div class="cc-cover" style="background:${genreCover[state.story.genre]||'#FCE8DC'}">${(genreLabels[state.story.genre]||'📖').split(' ')[0]}</div>
+      <div class="cc-info">
+        <h3>${cs.title}</h3>
+        <p>${state.char.name} · ${settingShort[state.story.setting]||state.story.setting}</p>
+        <div class="cc-prog"><div class="cc-prog-fill" style="width:60%"></div></div>
+      </div>
+    </div>`;
+  } else {
+    ca.innerHTML='<div style="text-align:center;padding:12px 0;font-size:13px;color:var(--muted);font-weight:600">Belum ada cerita. Buat sekarang! 📚</div>';
+  }
+  refreshTracker();
+}
+
+// ─── INIT ─────────────────────────────────────────────────
+if (state.user.name) {
+  document.getElementById('login-name').value = state.user.name;
+  document.querySelectorAll('.av-opt').forEach(a=>{
+    a.classList.remove('selected');
+    if (a.dataset.av===state.user.avatar) a.classList.add('selected');
+  });
+  state.user.avatar = state.user.avatar||'🦁';
+  goTo('s-home'); setNav('bn-home');
+}
+</script>
+</body>
+</html>
